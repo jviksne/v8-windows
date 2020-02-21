@@ -22,6 +22,5 @@ _testmain.go
 *.exe
 *.test
 *.prof
-include
 v8/build/.gclient
 v8/build/.gclient_entries
