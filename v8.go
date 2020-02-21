@@ -11,19 +11,20 @@ package v8
 // BUG(aroman) Unhandled promise rejections are silently dropped
 // (see https://github.com/augustoroman/v8/issues/21)
 
+// OLD cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8_base -lv8_init -lv8_initializers -lv8_libbase -lv8_libplatform -lv8_libsampler -lv8_nosnapshot
+// ONLY 1: cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8_c_bridge
+
 // #include <stdlib.h>
 // #include <string.h>
 // #include "v8_c_bridge.h"
 // #cgo CXXFLAGS: -I${SRCDIR} -I${SRCDIR}/include -fno-rtti -fpic -std=c++11
-// #cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8_base -lv8_init -lv8_initializers -lv8_libbase -lv8_libplatform -lv8_libsampler -lv8_nosnapshot
+// #cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8cbridge
 import "C"
 
 import (
 	"errors"
 	"fmt"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -549,6 +550,7 @@ func decRef(ctx *Context) {
 	contextsMutex.Unlock()
 }
 
+/*
 //export go_callback_handler
 func go_callback_handler(
 	cbIdStr C.String,
@@ -622,6 +624,7 @@ func go_callback_handler(
 
 	return C.ValueTuple{Value: res.ptr}
 }
+*/
 
 // HeapStatistics represent v8::HeapStatistics which are statistics
 // about the heap memory usage.
