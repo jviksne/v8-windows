@@ -18,7 +18,7 @@ package v8
 // #include <string.h>
 // #include "v8_c_bridge.h"
 // #cgo CXXFLAGS: -I${SRCDIR} -I${SRCDIR}/include -fno-rtti -fpic -std=c++11
-// #cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8cbridge
+// #cgo LDFLAGS: -pthread -L${SRCDIR}/libv8 -lv8_c_bridge
 import "C"
 
 import (
@@ -155,7 +155,9 @@ type Isolate struct {
 // NewIsolate creates a new V8 Isolate.
 func NewIsolate() *Isolate {
 	v8_init_once.Do(func() { C.v8_init() })
-	iso := &Isolate{ptr: C.v8_Isolate_New(C.StartupData{ptr: nil, len: 0})}
+	sd := C.StartupData{ptr: nil, len: 0}
+	ptrIsol := C.v8_Isolate_New(sd)
+	iso := &Isolate{ptr: ptrIsol}
 	runtime.SetFinalizer(iso, (*Isolate).release)
 	return iso
 }
