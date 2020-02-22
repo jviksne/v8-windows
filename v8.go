@@ -28,6 +28,8 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+	"os"
+	"log"
 )
 
 // Callback is the signature for callback functions that are registered with a
@@ -46,6 +48,18 @@ type CallbackArgs struct {
 	Caller  Loc
 	Args    []*Value
 	Context *Context
+}
+
+func v8init() {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	dirPtr := C.CString(dir)
+	defer C.free(unsafe.Pointer(dirPtr))
+	C.v8_init(dirPtr);
+
 }
 
 // Arg returns the specified argument or "undefined" if it doesn't exist.
@@ -110,7 +124,8 @@ func newSnapshot(data C.StartupData) *Snapshot {
 
 func (s *Snapshot) release() {
 	if s.data.ptr != nil {
-		C.free(unsafe.Pointer(s.data.ptr))
+		//C.free(unsafe.Pointer(s.data.ptr))
+		C.v8_free(unsafe.Pointer(s.data.ptr))
 	}
 	s.data.ptr = nil
 	s.data.len = 0
@@ -138,7 +153,7 @@ func RestoreSnapshotFromExport(data []byte) *Snapshot {
 // all of the initialization code must be pure JS and supplied at once as the
 // arg to this function.
 func CreateSnapshot(js string) *Snapshot {
-	v8_init_once.Do(func() { C.v8_init() })
+	v8_init_once.Do(func() { v8init(); })
 	js_ptr := C.CString(js)
 	defer C.free(unsafe.Pointer(js_ptr))
 	return newSnapshot(C.v8_CreateSnapshotDataBlob(js_ptr))
@@ -154,7 +169,8 @@ type Isolate struct {
 
 // NewIsolate creates a new V8 Isolate.
 func NewIsolate() *Isolate {
-	v8_init_once.Do(func() { C.v8_init() })
+	v8_init_once.Do(func() { v8init(); })
+	//C.v8_init
 	sd := C.StartupData{ptr: nil, len: 0}
 	ptrIsol := C.v8_Isolate_New(sd)
 	iso := &Isolate{ptr: ptrIsol}
@@ -165,7 +181,7 @@ func NewIsolate() *Isolate {
 // NewIsolateWithSnapshot creates a new V8 Isolate using the supplied Snapshot
 // to initialize all Contexts created from this Isolate.
 func NewIsolateWithSnapshot(s *Snapshot) *Isolate {
-	v8_init_once.Do(func() { C.v8_init() })
+	v8_init_once.Do(func() { v8init(); })
 	iso := &Isolate{ptr: C.v8_Isolate_New(s.data), s: s}
 	runtime.SetFinalizer(iso, (*Isolate).release)
 	return iso
@@ -204,7 +220,8 @@ func (i *Isolate) convertErrorMsg(error_msg C.Error) error {
 		return nil
 	}
 	err := errors.New(C.GoStringN(error_msg.ptr, error_msg.len))
-	C.free(unsafe.Pointer(error_msg.ptr))
+	//C.free(unsafe.Pointer(error_msg.ptr))
+	C.v8_free(unsafe.Pointer(error_msg.ptr))
 	return err
 }
 
@@ -397,7 +414,8 @@ func (v *Value) PromiseInfo() (PromiseState, *Value, error) {
 func (v *Value) String() string {
 	cstr := C.v8_Value_String(v.ctx.ptr, v.ptr)
 	str := C.GoStringN(cstr.ptr, cstr.len)
-	C.free(unsafe.Pointer(cstr.ptr))
+	//C.free(unsafe.Pointer(cstr.ptr))
+	C.v8_free(unsafe.Pointer(cstr.ptr))
 	return str
 }
 
